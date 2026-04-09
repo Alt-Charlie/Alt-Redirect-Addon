@@ -80,15 +80,17 @@ class ServiceProvider extends AddonServiceProvider
         return $this;
     }
 
-    /**
-     * Install the default query strings
-     */
     public function installDefaultQueryStrings(): self
     {
+        if (config('alt-redirect.driver') !== 'file') {
+            return $this;
+        }
+
         // create the standard
         $disk = (new Manager)->disk();
         if (! $disk->exists('content/alt-redirect/.installed')) {
             (new DefaultQueryStrings)->makeDefaultQueryStrings();
+            $disk->makeDirectory('content/alt-redirect/.installed');
         }
 
         return $this;
