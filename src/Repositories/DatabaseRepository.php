@@ -47,8 +47,16 @@ class DatabaseRepository implements RepositoryInterface
     {
         if ($type === 'redirects') {
             $data['is_regex'] = $this->isRegex($data['from']);
+            if (empty($data['id'])) {
+                $existing = Redirect::where('from', $data['from'])->first();
+                $data['id'] = $existing ? $existing->id : (string) uniqid();
+            }
             Redirect::updateOrCreate(['id' => $data['id']], $data);
         } elseif ($type === 'query-strings') {
+            if (empty($data['id'])) {
+                $existing = QueryString::where('query_string', $data['query_string'])->first();
+                $data['id'] = $existing ? $existing->id : (string) uniqid();
+            }
             QueryString::updateOrCreate(['id' => $data['id']], $data);
         }
     }
