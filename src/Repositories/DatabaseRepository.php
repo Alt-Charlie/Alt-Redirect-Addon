@@ -62,9 +62,17 @@ class DatabaseRepository implements RepositoryInterface
     public function delete(string $type, array $data): void
     {
         if ($type === 'redirects') {
-            Redirect::where('id', $data['id'])->delete();
+            if (isset($data['id'])) {
+                Redirect::where('id', $data['id'])->delete();
+            } elseif (isset($data['from'])) {
+                Redirect::where('from', $data['from'])->delete();
+            }
         } elseif ($type === 'query-strings') {
-            QueryString::where('id', $data['id'])->delete();
+            if (isset($data['id'])) {
+                QueryString::where('id', $data['id'])->delete();
+            } elseif (isset($data['query_string'])) {
+                QueryString::where('query_string', $data['query_string'])->delete();
+            }
         }
     }
 }

@@ -106,3 +106,34 @@ it('forgives unescaped question marks in regex', function () {
     $this->get('/test-unescaped-file?source=mandem')
         ->assertRedirect('/new-test-file/mandem?source=mandem');
 });
+
+it('can delete a redirect', function () {
+    $repository = app(RepositoryInterface::class);
+    $repository->save('redirects', [
+        'id' => 'delete-test-file',
+        'from' => '/old-delete',
+        'to' => '/new-delete',
+        'redirect_type' => 301,
+        'sites' => ['default'],
+    ]);
+
+    $repository->delete('redirects', ['id' => 'delete-test-file', 'from' => '/old-delete']);
+
+    $this->get('/old-delete')->assertNotFound();
+});
+
+it('can delete a query string', function () {
+    $repository = app(RepositoryInterface::class);
+    $repository->save('query-strings', [
+        'id' => 'delete-qs-file',
+        'query_string' => 'gclid-delete',
+        'strip' => true,
+        'sites' => ['default'],
+    ]);
+
+    // This is what the frontend does: sends only query_string
+    $repository->delete('query-strings', ['query_string' => 'gclid-delete']);
+
+    // Check it's gone
+    expect($repository->find('query-strings', 'query_string', 'gclid-delete'))->toBeNull();
+});
