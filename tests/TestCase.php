@@ -43,6 +43,7 @@ abstract class TestCase extends AddonTestCase
 
         // Mock the disk for file driver
         $app['config']->set('filesystems.disks.local.root', __DIR__.'/__fixtures__/storage');
+        $app->bind('filesystems.paths.standard', fn () => __DIR__.'/__fixtures__/storage');
     }
 
     protected function defineDatabaseMigrations()
