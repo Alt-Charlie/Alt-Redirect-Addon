@@ -39,7 +39,7 @@ class FileRepository implements RepositoryInterface
             if (! $disk->exists($path)) {
                 continue;
             }
-            $allData = array_merge($allData, $disk->getFiles($path)->all());
+            $allData = array_merge($allData, $disk->getFiles($path)->filter(fn ($f) => str_ends_with($f, '.yaml'))->all());
         }
 
         $allData = collect($allData)->sortByDesc(function ($file) use ($disk) {
