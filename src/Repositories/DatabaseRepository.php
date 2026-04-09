@@ -3,6 +3,7 @@
 namespace AltDesign\AltRedirect\Repositories;
 
 use AltDesign\AltRedirect\Contracts\RepositoryInterface;
+use AltDesign\AltRedirect\Helpers\URISupport;
 use AltDesign\AltRedirect\Models\QueryString;
 use AltDesign\AltRedirect\Models\Redirect;
 
@@ -46,7 +47,10 @@ class DatabaseRepository implements RepositoryInterface
     public function save(string $type, array $data): void
     {
         if ($type === 'redirects') {
-            $data['is_regex'] = $this->isRegex($data['from']);
+            if (! isset($data['from'])) {
+                return;
+            }
+            $data['is_regex'] = URISupport::isRegex($data['from']);
             if (empty($data['id'])) {
                 $existing = Redirect::where('from', $data['from'])->first();
                 $data['id'] = $existing ? $existing->id : (string) uniqid();
@@ -63,14 +67,7 @@ class DatabaseRepository implements RepositoryInterface
 
     protected function isRegex(string $str): bool
     {
-        $regexChars = ['*', '(', ')', '^', '$', '|', '{', '}', '\\'];
-        foreach ($regexChars as $char) {
-            if (str_contains($str, $char)) {
-                return true;
-            }
-        }
-
-        return false;
+        return URISupport::isRegex($str);
     }
 
     public function saveAll(string $type, array $data): void

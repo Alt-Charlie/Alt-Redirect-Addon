@@ -52,12 +52,18 @@ class CheckForRedirects
         $uri = URISupport::uriWithFilteredQueryStrings();
         foreach ($repository->getRegex('redirects') as $redirect) {
             $from = $redirect['from'];
-            if (! preg_match('#'.$from.'#', $uri) && strpos($from, '?') !== false && strpos($from, '\?') === false) {
-                $from = str_replace('?', '\?', $from);
+
+            // Determine if the pattern is already delimited
+            $isDelimited = @preg_match($from, '') !== false;
+            $pattern = $isDelimited ? $from : '#' . $from . '#';
+
+            // Handle the ? hack for non-delimited patterns
+            if (!$isDelimited && ! preg_match($pattern, $uri) && strpos($from, '?') !== false && strpos($from, '\?') === false) {
+                $pattern = '#' . str_replace('?', '\?', $from) . '#';
             }
 
-            if (preg_match('#'.$from.'#', $uri)) {
-                $redirectTo = preg_replace('#'.$from.'#', $redirect['to'], $uri);
+            if (preg_match($pattern, $uri)) {
+                $redirectTo = preg_replace($pattern, $redirect['to'], $uri);
                 if (! ($redirect['sites'] ?? false) || (in_array(Site::current(), $redirect['sites']))) {
                     return $this->redirectWithPreservedParams($redirectTo ?? '/', $redirect['redirect_type'] ?? 301);
                 }

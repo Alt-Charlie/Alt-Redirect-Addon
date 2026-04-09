@@ -3,6 +3,7 @@
 namespace AltDesign\AltRedirect\Console\Commands;
 
 use AltDesign\AltRedirect\Contracts\RepositoryInterface;
+use AltDesign\AltRedirect\Helpers\URISupport;
 use Illuminate\Console\Command;
 
 class ReScanRegexCommand extends Command
@@ -18,8 +19,13 @@ class ReScanRegexCommand extends Command
 
         $count = 0;
         foreach ($redirects as $redirect) {
+            if (! isset($redirect['from'])) {
+                $this->error('Redirect missing "from" key: ' . ($redirect['id'] ?? 'unknown ID'));
+                continue;
+            }
+
             $isRegexBefore = (bool) ($redirect['is_regex'] ?? false);
-            $isRegexAfter = $this->isRegex($redirect['from']);
+            $isRegexAfter = URISupport::isRegex($redirect['from']);
 
             if ($isRegexBefore !== $isRegexAfter) {
                 $redirect['is_regex'] = $isRegexAfter;
@@ -33,13 +39,6 @@ class ReScanRegexCommand extends Command
 
     protected function isRegex(string $str): bool
     {
-        $regexChars = ['*', '(', ')', '^', '$', '|', '{', '}', '\\'];
-        foreach ($regexChars as $char) {
-            if (str_contains($str, $char)) {
-                return true;
-            }
-        }
-
-        return false;
+        return URISupport::isRegex($str);
     }
 }

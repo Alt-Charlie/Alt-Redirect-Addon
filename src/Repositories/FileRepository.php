@@ -3,6 +3,7 @@
 namespace AltDesign\AltRedirect\Repositories;
 
 use AltDesign\AltRedirect\Contracts\RepositoryInterface;
+use AltDesign\AltRedirect\Helpers\URISupport;
 use Statamic\Facades\YAML;
 use Statamic\Filesystem\Manager;
 
@@ -102,7 +103,10 @@ class FileRepository implements RepositoryInterface
     {
         switch ($type) {
             case 'redirects':
-                if (! $this->isRegex($data['from'])) {
+                if (! isset($data['from'])) {
+                    return;
+                }
+                if (! URISupport::isRegex($data['from'])) {
                     $this->manager->disk()->put('content/alt-redirect/'.hash('sha512', (base64_encode($data['from']))).'.yaml', YAML::dump($data));
 
                     return;
@@ -117,14 +121,7 @@ class FileRepository implements RepositoryInterface
 
     protected function isRegex(string $str): bool
     {
-        $regexChars = ['*', '(', ')', '^', '$', '|', '{', '}', '\\'];
-        foreach ($regexChars as $char) {
-            if (str_contains($str, $char)) {
-                return true;
-            }
-        }
-
-        return false;
+        return URISupport::isRegex($str);
     }
 
     public function saveAll(string $type, array $data): void
