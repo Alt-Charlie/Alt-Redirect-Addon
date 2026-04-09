@@ -3,6 +3,8 @@
 namespace AltDesign\AltRedirect\Helpers;
 
 use AltDesign\AltRedirect\Contracts\RepositoryInterface;
+use AltDesign\AltRedirect\Repositories\DatabaseRepository;
+use Illuminate\Support\Facades\Schema;
 use Statamic\Fields\BlueprintRepository;
 use Statamic\Filesystem\Manager;
 
@@ -23,13 +25,21 @@ class DefaultQueryStrings
     public function makeDefaultQueryStrings()
     {
         $repository = app(RepositoryInterface::class);
+
+        // If using database driver, check if tables exist
+        if ($repository instanceof DatabaseRepository) {
+            if (! Schema::hasTable('alt_query_strings')) {
+                return;
+            }
+        }
+
         $blueprint = with(new BlueprintRepository)->setDirectory(__DIR__.'/../../resources/blueprints')->find('query-strings');
         // Add the values to the array
 
         foreach ($this->defaultQueryStrings as $query) {
             $fields = $blueprint->fields();
             $arr = [
-                'id' => uniqid(),
+                'id' => md5($query),
                 'sites' => ['default'],
                 'query_string' => $query,
                 'strip' => true,

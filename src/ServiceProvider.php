@@ -84,11 +84,9 @@ class ServiceProvider extends AddonServiceProvider
     public function installDefaultQueryStrings(): self
     {
         // create the standard
-        if ($this->app->runningInConsole()) {
-            $disk = (new Manager)->disk();
-            if (! $disk->exists('content/alt-redirect/.installed')) {
-                (new DefaultQueryStrings)->makeDefaultQueryStrings();
-            }
+        $disk = (new Manager)->disk();
+        if (! $disk->exists('content/alt-redirect/.installed')) {
+            (new DefaultQueryStrings)->makeDefaultQueryStrings();
         }
 
         return $this;
@@ -167,6 +165,7 @@ class ServiceProvider extends AddonServiceProvider
         $this->addToNav()
             ->registerPermissions()
             ->registerCommands()
-            ->configureSSG();
+            ->configureSSG()
+            ->installDefaultQueryStrings();
     }
 }
