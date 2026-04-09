@@ -28,12 +28,13 @@ class URISupport
     /**
      * Returns the current URI with filtered query strings for regex redirect matching.
      *
+     * @param string|null $path Optional path to use instead of current path.
      * @return string $uri
      */
-    public static function uriWithFilteredQueryStrings(): string
+    public static function uriWithFilteredQueryStrings(?string $path = null): string
     {
         $request = request();
-        $path = self::path();
+        $path = $path ?? self::path();
         $queryString = $request->getQueryString();
 
         if (! $queryString) {
