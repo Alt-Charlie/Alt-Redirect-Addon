@@ -4,6 +4,7 @@ namespace AltDesign\AltRedirect;
 
 use AltDesign\AltRedirect\Console\Commands\DefaultQueryStringsCommand;
 use AltDesign\AltRedirect\Console\Commands\MigrateFileRedirectsCommand;
+use AltDesign\AltRedirect\Console\Commands\ReScanRegexCommand;
 use AltDesign\AltRedirect\Contracts\RepositoryInterface;
 use AltDesign\AltRedirect\Helpers\DefaultQueryStrings;
 use AltDesign\AltRedirect\Http\Middleware\CheckForRedirects;
@@ -73,6 +74,7 @@ class ServiceProvider extends AddonServiceProvider
         $this->commands([
             DefaultQueryStringsCommand::class,
             MigrateFileRedirectsCommand::class,
+            ReScanRegexCommand::class,
         ]);
 
         return $this;

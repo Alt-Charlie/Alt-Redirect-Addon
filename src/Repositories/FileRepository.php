@@ -102,7 +102,7 @@ class FileRepository implements RepositoryInterface
     {
         switch ($type) {
             case 'redirects':
-                if (strpos($data['from'], '(.*)') === false) {
+                if (! $this->isRegex($data['from'])) {
                     $this->manager->disk()->put('content/alt-redirect/'.hash('sha512', (base64_encode($data['from']))).'.yaml', YAML::dump($data));
 
                     return;
@@ -113,6 +113,18 @@ class FileRepository implements RepositoryInterface
                 $this->manager->disk()->put('content/alt-redirect/query-strings/'.hash('sha512', (base64_encode($data['query_string']))).'.yaml', YAML::dump($data));
                 break;
         }
+    }
+
+    protected function isRegex(string $str): bool
+    {
+        $regexChars = ['*', '(', ')', '^', '$', '|', '{', '}', '\\'];
+        foreach ($regexChars as $char) {
+            if (str_contains($str, $char)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function saveAll(string $type, array $data): void

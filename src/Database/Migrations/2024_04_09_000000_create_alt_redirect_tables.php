@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('from')->index();
             $table->string('to');
             $table->integer('redirect_type')->default(301);
+            $table->boolean('is_regex')->default(false);
             $table->json('sites')->nullable();
             $table->timestamps();
         });

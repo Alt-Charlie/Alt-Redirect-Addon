@@ -107,6 +107,21 @@ it('forgives unescaped question marks in regex', function () {
         ->assertRedirect('/new-test-file/mandem?source=mandem');
 });
 
+it('can redirect with non-standard regex', function () {
+    $repository = app(RepositoryInterface::class);
+    $repository->save('redirects', [
+        'id' => 'non-standard-regex-file',
+        'from' => '^/products/(.+)$',
+        'to' => '/shop/$1',
+        'redirect_type' => 301,
+        'sites' => ['default'],
+    ]);
+
+    $this->get('/products/shoes')
+        ->assertRedirect('/shop/shoes')
+        ->assertStatus(301);
+});
+
 it('can delete a redirect', function () {
     $repository = app(RepositoryInterface::class);
     $repository->save('redirects', [

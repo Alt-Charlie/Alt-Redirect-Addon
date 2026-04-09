@@ -25,7 +25,7 @@ class DatabaseRepository implements RepositoryInterface
             return [];
         }
 
-        return Redirect::where('from', 'like', '%(.*)%')->get()->toArray();
+        return Redirect::where('is_regex', true)->get()->toArray();
     }
 
     public function find(string $type, string $key, $value): ?array
@@ -46,10 +46,23 @@ class DatabaseRepository implements RepositoryInterface
     public function save(string $type, array $data): void
     {
         if ($type === 'redirects') {
+            $data['is_regex'] = $this->isRegex($data['from']);
             Redirect::updateOrCreate(['id' => $data['id']], $data);
         } elseif ($type === 'query-strings') {
             QueryString::updateOrCreate(['id' => $data['id']], $data);
         }
+    }
+
+    protected function isRegex(string $str): bool
+    {
+        $regexChars = ['*', '(', ')', '^', '$', '|', '{', '}', '\\'];
+        foreach ($regexChars as $char) {
+            if (str_contains($str, $char)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function saveAll(string $type, array $data): void
