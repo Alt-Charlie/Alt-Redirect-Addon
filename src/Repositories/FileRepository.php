@@ -3,7 +3,6 @@
 namespace AltDesign\AltRedirect\Repositories;
 
 use AltDesign\AltRedirect\Contracts\RepositoryInterface;
-use Illuminate\Support\Facades\File;
 use Statamic\Facades\YAML;
 use Statamic\Filesystem\Manager;
 
@@ -34,21 +33,21 @@ class FileRepository implements RepositoryInterface
         }
 
         $allData = [];
+        $disk = $this->manager->disk();
         foreach ($this->paths[$type] as $path) {
-            $filePath = base_path($path);
-            if (! File::exists($filePath)) {
+            if (! $disk->exists($path)) {
                 continue;
             }
-            $allData = array_merge($allData, File::files($filePath));
+            $allData = array_merge($allData, $disk->getFiles($path)->all());
         }
 
-        $allData = collect($allData)->sortByDesc(function ($file) {
-            return $file->getCTime();
+        $allData = collect($allData)->sortByDesc(function ($file) use ($disk) {
+            return $disk->lastModified($file);
         });
 
         $results = [];
         foreach ($allData as $file) {
-            $results[] = YAML::parse(File::get($file));
+            $results[] = YAML::parse($disk->get($file));
         }
 
         return $results;
@@ -60,14 +59,19 @@ class FileRepository implements RepositoryInterface
             return [];
         }
 
-        $allRegexRedirects = File::allFiles(base_path('/content/alt-redirect/alt-regex'));
-        $allRegexRedirects = collect($allRegexRedirects)->sortBy(function ($file) {
-            return $file->getCTime();
+        $disk = $this->manager->disk();
+        if (! $disk->exists('content/alt-redirect/alt-regex')) {
+            return [];
+        }
+
+        $allRegexRedirects = $disk->getFilesRecursively('content/alt-redirect/alt-regex')->all();
+        $allRegexRedirects = collect($allRegexRedirects)->sortBy(function ($file) use ($disk) {
+            return $disk->lastModified($file);
         });
 
         $results = [];
         foreach ($allRegexRedirects as $file) {
-            $results[] = YAML::parse(File::get($file));
+            $results[] = YAML::parse($disk->get($file));
         }
 
         return $results;
@@ -123,13 +127,24 @@ class FileRepository implements RepositoryInterface
         $disk = $this->manager->disk();
         switch ($type) {
             case 'redirects':
-                $disk->delete('content/alt-redirect/'.hash('sha512', base64_encode($data['from'])).'.yaml');
-                $disk->delete('content/alt-redirect/'.base64_encode($data['from']).'.yaml');
-                $disk->delete('content/alt-redirect/alt-regex/'.hash('sha512', base64_encode($data['id'])).'.yaml');
-                $disk->delete('content/alt-redirect/alt-regex/'.base64_encode($data['id']).'.yaml');
+                if (isset($data['from'])) {
+                    $disk->delete('content/alt-redirect/'.hash('sha512', base64_encode($data['from'])).'.yaml');
+                    $disk->delete('content/alt-redirect/'.base64_encode($data['from']).'.yaml');
+                }
+                if (isset($data['id'])) {
+                    $disk->delete('content/alt-redirect/alt-regex/'.hash('sha512', base64_encode($data['id'])).'.yaml');
+                    $disk->delete('content/alt-redirect/alt-regex/'.base64_encode($data['id']).'.yaml');
+                }
                 break;
             case 'query-strings':
-                $disk->delete('content/alt-redirect/query-strings/'.hash('sha512', base64_encode($data['query_string'])).'.yaml');
+                if (isset($data['query_string'])) {
+                    $disk->delete('content/alt-redirect/query-strings/'.hash('sha512', base64_encode($data['query_string'])).'.yaml');
+                } elseif (isset($data['id'])) {
+                    $item = $this->find($type, 'id', $data['id']);
+                    if ($item && isset($item['query_string'])) {
+                        $disk->delete('content/alt-redirect/query-strings/'.hash('sha512', base64_encode($item['query_string'])).'.yaml');
+                    }
+                }
                 break;
         }
     }
