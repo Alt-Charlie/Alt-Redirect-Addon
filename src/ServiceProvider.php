@@ -90,7 +90,7 @@ class ServiceProvider extends AddonServiceProvider
         $disk = (new Manager)->disk();
         if (! $disk->exists('content/alt-redirect/.installed')) {
             (new DefaultQueryStrings)->makeDefaultQueryStrings();
-            $disk->makeDirectory('content/alt-redirect/.installed');
+            $disk->put('content/alt-redirect/.installed', '');
         }
 
         return $this;
