@@ -3,6 +3,7 @@
 namespace AltDesign\AltRedirect\Repositories;
 
 use AltDesign\AltRedirect\Contracts\RepositoryInterface;
+use AltDesign\AltRedirect\Helpers\URISupport;
 use AltDesign\AltRedirect\Models\QueryString;
 use AltDesign\AltRedirect\Models\Redirect;
 
@@ -25,7 +26,7 @@ class DatabaseRepository implements RepositoryInterface
             return [];
         }
 
-        return Redirect::where('from', 'like', '%(.*)%')->get()->toArray();
+        return Redirect::where('is_regex', true)->get()->toArray();
     }
 
     public function find(string $type, string $key, $value): ?array
@@ -46,10 +47,27 @@ class DatabaseRepository implements RepositoryInterface
     public function save(string $type, array $data): void
     {
         if ($type === 'redirects') {
+            if (! isset($data['from'])) {
+                return;
+            }
+            $data['is_regex'] = URISupport::isRegex($data['from']);
+            if (empty($data['id'])) {
+                $existing = Redirect::where('from', $data['from'])->first();
+                $data['id'] = $existing ? $existing->id : (string) uniqid();
+            }
             Redirect::updateOrCreate(['id' => $data['id']], $data);
         } elseif ($type === 'query-strings') {
+            if (empty($data['id'])) {
+                $existing = QueryString::where('query_string', $data['query_string'])->first();
+                $data['id'] = $existing ? $existing->id : (string) uniqid();
+            }
             QueryString::updateOrCreate(['id' => $data['id']], $data);
         }
+    }
+
+    protected function isRegex(string $str): bool
+    {
+        return URISupport::isRegex($str);
     }
 
     public function saveAll(string $type, array $data): void

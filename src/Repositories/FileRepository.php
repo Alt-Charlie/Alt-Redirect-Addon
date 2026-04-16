@@ -3,6 +3,7 @@
 namespace AltDesign\AltRedirect\Repositories;
 
 use AltDesign\AltRedirect\Contracts\RepositoryInterface;
+use AltDesign\AltRedirect\Helpers\URISupport;
 use Statamic\Facades\YAML;
 use Statamic\Filesystem\Manager;
 
@@ -38,7 +39,7 @@ class FileRepository implements RepositoryInterface
             if (! $disk->exists($path)) {
                 continue;
             }
-            $allData = array_merge($allData, $disk->getFiles($path)->all());
+            $allData = array_merge($allData, $disk->getFiles($path)->filter(fn ($f) => str_ends_with($f, '.yaml'))->all());
         }
 
         $allData = collect($allData)->sortByDesc(function ($file) use ($disk) {
@@ -102,7 +103,10 @@ class FileRepository implements RepositoryInterface
     {
         switch ($type) {
             case 'redirects':
-                if (strpos($data['from'], '(.*)') === false) {
+                if (! isset($data['from'])) {
+                    return;
+                }
+                if (! URISupport::isRegex($data['from'])) {
                     $this->manager->disk()->put('content/alt-redirect/'.hash('sha512', (base64_encode($data['from']))).'.yaml', YAML::dump($data));
 
                     return;
@@ -113,6 +117,11 @@ class FileRepository implements RepositoryInterface
                 $this->manager->disk()->put('content/alt-redirect/query-strings/'.hash('sha512', (base64_encode($data['query_string']))).'.yaml', YAML::dump($data));
                 break;
         }
+    }
+
+    protected function isRegex(string $str): bool
+    {
+        return URISupport::isRegex($str);
     }
 
     public function saveAll(string $type, array $data): void

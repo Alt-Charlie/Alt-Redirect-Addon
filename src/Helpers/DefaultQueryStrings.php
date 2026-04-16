@@ -4,7 +4,6 @@ namespace AltDesign\AltRedirect\Helpers;
 
 use AltDesign\AltRedirect\Contracts\RepositoryInterface;
 use Statamic\Fields\BlueprintRepository;
-use Statamic\Filesystem\Manager;
 
 class DefaultQueryStrings
 {
@@ -23,13 +22,14 @@ class DefaultQueryStrings
     public function makeDefaultQueryStrings()
     {
         $repository = app(RepositoryInterface::class);
+
         $blueprint = with(new BlueprintRepository)->setDirectory(__DIR__.'/../../resources/blueprints')->find('query-strings');
         // Add the values to the array
 
         foreach ($this->defaultQueryStrings as $query) {
             $fields = $blueprint->fields();
             $arr = [
-                'id' => uniqid(),
+                'id' => md5($query),
                 'sites' => ['default'],
                 'query_string' => $query,
                 'strip' => true,
@@ -38,6 +38,5 @@ class DefaultQueryStrings
             $fields->validate();
             $repository->save('query-strings', $fields->process()->values()->toArray());
         }
-        (new Manager)->disk()->makeDirectory('content/alt-redirect/.installed');
     }
 }

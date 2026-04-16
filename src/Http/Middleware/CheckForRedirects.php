@@ -21,20 +21,26 @@ class CheckForRedirects
         $repository = app(RepositoryInterface::class);
 
         // Grab path, make alternate / permutation
-        $path = URISupport::path();
-        if (str_ends_with($path, '/')) {
-            $permuPath = substr($path, 0, strlen($path) - 1);
+        $pathOnly = URISupport::path();
+        if (str_ends_with($pathOnly, '/')) {
+            $permuPathOnly = substr($pathOnly, 0, strlen($pathOnly) - 1);
         } else {
-            $permuPath = $path.'/';
+            $permuPathOnly = $pathOnly.'/';
         }
 
+        $path = URISupport::uriWithFilteredQueryStrings($pathOnly);
+        $permuPath = URISupport::uriWithFilteredQueryStrings($permuPathOnly);
+
         // Check simple redirects
-        $redirect = $repository->find('redirects', 'from', $path) ?? $repository->find('redirects', 'from', $permuPath);
+        $redirect = $repository->find('redirects', 'from', $path) ??
+                    $repository->find('redirects', 'from', $permuPath) ??
+                    $repository->find('redirects', 'from', $pathOnly) ??
+                    $repository->find('redirects', 'from', $permuPathOnly);
 
         if ($redirect) {
             $to = $redirect['to'] ?? '/';
             // There's no need to redirect.
-            if ($to === $path || $to === $permuPath) {
+            if ($to === $path || $to === $permuPath || $to === $pathOnly || $to === $permuPathOnly) {
                 return $next($request);
             }
             if (! ($redirect['sites'] ?? false) || (in_array(Site::current(), $redirect['sites']))) {
@@ -46,12 +52,18 @@ class CheckForRedirects
         $uri = URISupport::uriWithFilteredQueryStrings();
         foreach ($repository->getRegex('redirects') as $redirect) {
             $from = $redirect['from'];
-            if (! preg_match('#'.$from.'#', $uri) && strpos($from, '?') !== false && strpos($from, '\?') === false) {
-                $from = str_replace('?', '\?', $from);
+
+            // Determine if the pattern is already delimited
+            $isDelimited = @preg_match($from, '') !== false;
+            $pattern = $isDelimited ? $from : '#' . $from . '#';
+
+            // Handle the ? hack for non-delimited patterns
+            if (!$isDelimited && ! preg_match($pattern, $uri) && strpos($from, '?') !== false && strpos($from, '\?') === false) {
+                $pattern = '#' . str_replace('?', '\?', $from) . '#';
             }
 
-            if (preg_match('#'.$from.'#', $uri)) {
-                $redirectTo = preg_replace('#'.$from.'#', $redirect['to'], $uri);
+            if (preg_match($pattern, $uri)) {
+                $redirectTo = preg_replace($pattern, $redirect['to'], $uri);
                 if (! ($redirect['sites'] ?? false) || (in_array(Site::current(), $redirect['sites']))) {
                     return $this->redirectWithPreservedParams($redirectTo ?? '/', $redirect['redirect_type'] ?? 301);
                 }

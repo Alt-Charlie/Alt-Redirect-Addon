@@ -4,6 +4,7 @@ namespace AltDesign\AltRedirect;
 
 use AltDesign\AltRedirect\Console\Commands\DefaultQueryStringsCommand;
 use AltDesign\AltRedirect\Console\Commands\MigrateFileRedirectsCommand;
+use AltDesign\AltRedirect\Console\Commands\ReScanRegexCommand;
 use AltDesign\AltRedirect\Contracts\RepositoryInterface;
 use AltDesign\AltRedirect\Helpers\DefaultQueryStrings;
 use AltDesign\AltRedirect\Http\Middleware\CheckForRedirects;
@@ -73,22 +74,23 @@ class ServiceProvider extends AddonServiceProvider
         $this->commands([
             DefaultQueryStringsCommand::class,
             MigrateFileRedirectsCommand::class,
+            ReScanRegexCommand::class,
         ]);
 
         return $this;
     }
 
-    /**
-     * Install the default query strings
-     */
     public function installDefaultQueryStrings(): self
     {
+        if (config('alt-redirect.driver') !== 'file') {
+            return $this;
+        }
+
         // create the standard
-        if ($this->app->runningInConsole()) {
-            $disk = (new Manager)->disk();
-            if (! $disk->exists('content/alt-redirect/.installed')) {
-                (new DefaultQueryStrings)->makeDefaultQueryStrings();
-            }
+        $disk = (new Manager)->disk();
+        if (! $disk->exists('content/alt-redirect/.installed')) {
+            (new DefaultQueryStrings)->makeDefaultQueryStrings();
+            $disk->put('content/alt-redirect/.installed', '');
         }
 
         return $this;
@@ -167,6 +169,7 @@ class ServiceProvider extends AddonServiceProvider
         $this->addToNav()
             ->registerPermissions()
             ->registerCommands()
-            ->configureSSG();
+            ->configureSSG()
+            ->installDefaultQueryStrings();
     }
 }

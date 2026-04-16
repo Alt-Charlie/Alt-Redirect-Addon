@@ -13,11 +13,13 @@ class Redirect extends Model
         'from',
         'to',
         'redirect_type',
+        'is_regex',
         'sites',
     ];
 
     protected $casts = [
         'sites' => 'array',
+        'is_regex' => 'boolean',
     ];
 
     public $incrementing = false;

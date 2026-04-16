@@ -82,7 +82,9 @@ class AltRedirectController
 
         // Add the values to the array
         $arr = $request->all();
-        $arr['id'] = uniqid();
+        if (empty($arr['id'])) {
+            $arr['id'] = uniqid();
+        }
 
         // Avoid looping redirects (caught by validation, but give a more helpful error)
         if (($this->type == 'redirects') && ($arr['to'] === $arr['from'])) {
